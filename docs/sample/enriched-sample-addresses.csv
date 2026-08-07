@@ -1,0 +1,6 @@
+id,name,address,latitude,longitude,accuracy_type,congressional_district,census_tract,census_fips
+1,"Arlington office","1109 N Highland St, Arlington, VA 22201",38.886672,-77.094735,rooftop,8,101801,510131018012004
+2,"Casselberry depot","4410 S Highway 17 92, Casselberry, FL 32707",28.671467,-81.340684,rooftop,7,022001,121170220012002
+3,"Redmond campus","15000 NE 24th St, Redmond, WA 98052",47.632695,-122.140153,rooftop,1,022803,530330228031014
+4,"Morgan Hill site","17015 Walnut Grove Dr, Morgan Hill, CA 95037",37.130404,-121.639246,rooftop,18,512312,060855123121000
+5,"DC address","1600 Pennsylvania Ave. NW, Washington, DC 20500",38.897675,-77.036547,rooftop,98,980000,110019800001034
