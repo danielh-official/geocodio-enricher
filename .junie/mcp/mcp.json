@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "/Users/danielh/Library/Application Support/Herd/bin/php85",
+            "args": [
+                "/Users/danielh/GitHub/geocodio-enricher/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}
