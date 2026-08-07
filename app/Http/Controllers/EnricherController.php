@@ -6,6 +6,7 @@ use App\Jobs\GeocodeAddresses;
 use App\Models\GeocodeCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class EnricherController extends Controller
     /**
      * Price per Geocodio lookup, used only to render the savings counter.
      */
-    private const PRICE_PER_LOOKUP = 0.001;
+    private const float PRICE_PER_LOOKUP = 0.001;
 
     public function index(Request $request): Response
     {
@@ -39,7 +40,12 @@ class EnricherController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
         ]);
 
-        $path = $validated['file']->store('uploads');
+        /**
+         * @var UploadedFile
+         */
+        $file = $validated['file'];
+
+        $path = $file->store('uploads');
 
         $handle = fopen(Storage::path($path), 'r');
         $headers = fgetcsv($handle) ?: [];
@@ -48,7 +54,7 @@ class EnricherController extends Controller
         $request->session()->forget(['csv.column', 'csv.hashes', 'csv.stats']);
         $request->session()->put([
             'csv.path' => $path,
-            'csv.name' => $validated['file']->getClientOriginalName(),
+            'csv.name' => $file->getClientOriginalName(),
             'csv.headers' => $headers,
         ]);
 
@@ -61,7 +67,12 @@ class EnricherController extends Controller
             'column' => ['required', 'string', Rule::in($request->session()->get('csv.headers', []))],
         ]);
 
-        $addresses = $this->readColumn($request->session()->get('csv.path'), $validated['column']);
+        /**
+         * @var string
+         */
+        $column = $validated['column'];
+
+        $addresses = $this->readColumn($request->session()->get('csv.path'), $column);
 
         // Unique by hash: duplicate rows in one file must not be billed twice.
         $unique = [];
@@ -80,7 +91,7 @@ class EnricherController extends Controller
         }
 
         $request->session()->put([
-            'csv.column' => $validated['column'],
+            'csv.column' => $column,
             // ponytail: hash list lives in the session so the page and the
             // download need no second table. Ceiling is session size; move to a
             // `jobs`-style row if files get past ~50k addresses.
