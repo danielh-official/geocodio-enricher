@@ -15,6 +15,8 @@ class FakeGeocodio extends Geocodio
 {
     /**
      * @param  string|array<int|string, string>  $query
+     * @param  array<int, string>  $fields
+     * @param  mixed  ...$args
      * @return array{results: list<array{query: string, response: array{results: list<array<string, mixed>>}}>}
      */
     public function geocode($query, array $fields = [], ...$args): array

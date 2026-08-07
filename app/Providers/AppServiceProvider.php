@@ -18,18 +18,14 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Overrides the package's own binding: app providers register after
-        // discovered ones. 'Geocodio' is the package config default, which is
-        // what you get when GEOCODIO_API_KEY is unset.
-        $this->app->bind(Geocodio::class, function (): Geocodio {
-            $key = config('geocodio.api_key');
-
-            return blank($key) || $key === 'Geocodio'
-                ? new FakeGeocodio
-                : (new Geocodio)
-                    ->setApiKey($key)
-                    ->setHostname(config('geocodio.hostname'))
-                    ->setApiVersion(config('geocodio.api_version'));
-        });
+        // discovered ones.
+        $this->app->bind(Geocodio::class, fn (): Geocodio => hasGeocodioApiKey()
+            ? (new Geocodio)
+                ->setApiKey(config('geocodio.api_key'))
+                ->setHostname(config('geocodio.hostname'))
+                ->setApiVersion(config('geocodio.api_version'))
+            : new FakeGeocodio,
+        );
     }
 
     /**

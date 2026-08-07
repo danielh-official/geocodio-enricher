@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GeocodeAddresses;
 use App\Models\GeocodeCache;
-use App\Services\FakeGeocodio;
-use Geocodio\Geocodio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -13,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EnricherController extends Controller
@@ -33,7 +32,7 @@ class EnricherController extends Controller
             'column' => $request->session()->get('csv.column'),
             'stats' => $request->session()->get('csv.stats'),
             'resolved' => $hashes === [] ? 0 : GeocodeCache::whereIn('address_hash', $hashes)->count(),
-            'demo' => app(Geocodio::class) instanceof FakeGeocodio,
+            'demo' => ! hasGeocodioApiKey(),
         ]);
     }
 
@@ -50,7 +49,11 @@ class EnricherController extends Controller
 
         $path = $file->store('uploads');
 
-        $handle = fopen(Storage::path($path), 'r');
+        if ($path === false) {
+            throw new RuntimeException('Unable to store the uploaded CSV.');
+        }
+
+        $handle = $this->openFile(Storage::path($path), 'r');
         $headers = fgetcsv($handle) ?: [];
         fclose($handle);
 
@@ -120,13 +123,14 @@ class EnricherController extends Controller
 
         $cache = GeocodeCache::whereIn('address_hash', $request->session()->get('csv.hashes', []))
             ->get()
-            ->keyBy('address_hash');
+            ->keyBy('address_hash')
+            ->all();
 
         $filename = 'enriched-'.$request->session()->get('csv.name', 'addresses.csv');
 
         return response()->streamDownload(function () use ($path, $column, $cache) {
-            $in = fopen(Storage::path($path), 'r');
-            $out = fopen('php://output', 'w');
+            $in = $this->openFile(Storage::path($path), 'r');
+            $out = $this->openFile('php://output', 'w');
 
             $headers = fgetcsv($in) ?: [];
             $index = array_search($column, $headers, true);
@@ -134,8 +138,8 @@ class EnricherController extends Controller
             fputcsv($out, [...$headers, 'latitude', 'longitude', 'accuracy_type', 'congressional_district', 'census_tract', 'census_fips']);
 
             while (($row = fgetcsv($in)) !== false) {
-                $hit = $cache->get(addressHash($row[$index] ?? ''));
-                $appends = $hit?->appends ?? [];
+                $hit = $cache[addressHash($row[$index] ?? '')] ?? null;
+                $appends = $hit->appends ?? [];
                 $census = is_array($appends['census'] ?? null) ? reset($appends['census']) : [];
 
                 fputcsv($out, [
@@ -159,7 +163,7 @@ class EnricherController extends Controller
      */
     private function readColumn(string $path, string $column): array
     {
-        $handle = fopen(Storage::path($path), 'r');
+        $handle = $this->openFile(Storage::path($path), 'r');
         $headers = fgetcsv($handle) ?: [];
         $index = array_search($column, $headers, true);
 
@@ -176,5 +180,19 @@ class EnricherController extends Controller
         fclose($handle);
 
         return $addresses;
+    }
+
+    /**
+     * @return resource
+     */
+    private function openFile(string $file, string $mode)
+    {
+        $handle = fopen($file, $mode);
+
+        if ($handle === false) {
+            throw new RuntimeException("Unable to open {$file}.");
+        }
+
+        return $handle;
     }
 }

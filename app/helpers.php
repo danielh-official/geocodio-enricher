@@ -23,3 +23,17 @@ function addressHash(string $raw): string
 {
     return hash('sha256', normalizeAddress($raw));
 }
+
+/**
+ * Whether a real Geocodio key is configured. 'Geocodio' is the package config
+ * default, which is what you get when GEOCODIO_API_KEY is unset.
+ *
+ * Single source of truth for live-vs-fake: AppServiceProvider binds the client
+ * on it, the enricher page shows its demo banner on it.
+ */
+function hasGeocodioApiKey(): bool
+{
+    $key = config('geocodio.api_key');
+
+    return filled($key) && $key !== 'Geocodio';
+}
