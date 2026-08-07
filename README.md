@@ -48,6 +48,12 @@ GEOCODIO_API_KEY=your-key
 QUEUE_CONNECTION=database
 ```
 
+Without a key the app still runs: `AppServiceProvider` binds
+`App\Services\FakeGeocodio` instead of the live client, every address resolves
+to the same placeholder record, and the page says so. Set the key for real
+results. The test suite always runs against the fake, so no test can bill your
+account.
+
 Then run the app and a worker:
 
 ```bash

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GeocodeAddresses;
 use App\Models\GeocodeCache;
+use App\Services\FakeGeocodio;
+use Geocodio\Geocodio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -31,6 +33,7 @@ class EnricherController extends Controller
             'column' => $request->session()->get('csv.column'),
             'stats' => $request->session()->get('csv.stats'),
             'resolved' => $hashes === [] ? 0 : GeocodeCache::whereIn('address_hash', $hashes)->count(),
+            'demo' => app(Geocodio::class) instanceof FakeGeocodio,
         ]);
     }
 

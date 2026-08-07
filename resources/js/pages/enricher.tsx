@@ -20,12 +20,14 @@ export default function Enricher({
     column,
     stats,
     resolved,
+    demo,
 }: {
     filename?: string;
     headers?: string[];
     column?: string;
     stats?: Stats;
     resolved: number;
+    demo?: boolean;
 }) {
     const pending = stats ? stats.processed - resolved : 0;
 
@@ -43,6 +45,15 @@ export default function Enricher({
                         cache instead of being bought again.
                     </p>
                 </header>
+
+                {demo && (
+                    <p className="rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground">
+                        Demo mode: no <code>GEOCODIO_API_KEY</code> is
+                        configured, so every address resolves to the same
+                        placeholder record. Counters below are real; the
+                        coordinates are not.
+                    </p>
+                )}
 
                 <Form
                     {...EnricherController.upload.form()}
