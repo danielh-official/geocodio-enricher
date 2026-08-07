@@ -11,11 +11,17 @@ appended. API calls go through the official
 
 Geocodio's terms permit storing geocoding results indefinitely; Google's
 require deleting them within 30 days. That licensing difference is the whole
-reason this app has a `geocode_cache` table: every address it has ever resolved
-stays resolved, so the second and every later time an address appears — in
-another file, another month, another user's upload — it costs nothing. The
-counters on the results page measure exactly that. "$1.20 avoided" is the dollar
-value of a permission Google does not grant.
+reason this app has a `geocode_cache` table: every address an account has
+resolved stays resolved, so the second and every later time that address appears
+— in another file, another month — it costs nothing. The counters on the results
+page measure exactly that. "$1.20 avoided" is the dollar value of a permission
+Google does not grant.
+
+The cache is partitioned per account (`unique(user_id, address_hash)`). One
+user's uploaded addresses are never served to another, which costs some hit rate
+— the same address in two accounts is bought twice — and buys the property that
+an account's address list cannot leak sideways through a shared cache. With user
+accounts in the app, that trade is the right way round.
 
 ```
 1,847 addresses processed

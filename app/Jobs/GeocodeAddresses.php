@@ -12,9 +12,10 @@ class GeocodeAddresses implements ShouldQueue
     use Queueable;
 
     /**
-     * @param  list<string>  $addresses  Raw addresses known to be absent from the cache.
+     * @param  int  $userId  Owner of the cache partition these results belong to.
+     * @param  list<string>  $addresses  Raw addresses known to be absent from that partition.
      */
-    public function __construct(public array $addresses) {}
+    public function __construct(public int $userId, public array $addresses) {}
 
     public function handle(Geocodio $geocodio): void
     {
@@ -34,6 +35,7 @@ class GeocodeAddresses implements ShouldQueue
                 // A miss is cached too, with null coordinates, so the same bad
                 // address is never billed twice.
                 $rows[] = [
+                    'user_id' => $this->userId,
                     'address_hash' => addressHash($raw),
                     'raw_address' => $raw,
                     'latitude' => $match['location']['lat'] ?? null,
@@ -45,7 +47,7 @@ class GeocodeAddresses implements ShouldQueue
                 ];
             }
 
-            GeocodeCache::upsert($rows, ['address_hash'], [
+            GeocodeCache::upsert($rows, ['user_id', 'address_hash'], [
                 'raw_address', 'latitude', 'longitude', 'accuracy_type', 'appends', 'updated_at',
             ]);
         }

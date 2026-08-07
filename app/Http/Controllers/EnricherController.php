@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GeocodeAddresses;
 use App\Models\GeocodeCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -31,7 +32,7 @@ class EnricherController extends Controller
             'headers' => $request->session()->get('csv.headers'),
             'column' => $request->session()->get('csv.column'),
             'stats' => $request->session()->get('csv.stats'),
-            'resolved' => $hashes === [] ? 0 : GeocodeCache::whereIn('address_hash', $hashes)->count(),
+            'resolved' => $hashes === [] ? 0 : $this->cacheFor($request)->whereIn('address_hash', $hashes)->count(),
             'demo' => ! hasGeocodioApiKey(),
         ]);
     }
@@ -86,14 +87,15 @@ class EnricherController extends Controller
             $unique[addressHash($raw)] = $raw;
         }
 
-        $cached = GeocodeCache::whereIn('address_hash', array_keys($unique))
+        $cached = $this->cacheFor($request)
+            ->whereIn('address_hash', array_keys($unique))
             ->pluck('address_hash')
             ->all();
 
         $misses = array_values(array_diff_key($unique, array_flip($cached)));
 
         if ($misses !== []) {
-            GeocodeAddresses::dispatch($misses);
+            GeocodeAddresses::dispatch($request->user()->id, $misses);
         }
 
         $request->session()->put([
@@ -121,7 +123,8 @@ class EnricherController extends Controller
 
         abort_if($path === null || $column === null, 404);
 
-        $cache = GeocodeCache::whereIn('address_hash', $request->session()->get('csv.hashes', []))
+        $cache = $this->cacheFor($request)
+            ->whereIn('address_hash', $request->session()->get('csv.hashes', []))
             ->get()
             ->keyBy('address_hash')
             ->all();
@@ -156,6 +159,17 @@ class EnricherController extends Controller
             fclose($in);
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * The signed-in user's slice of the cache. Every read goes through here so
+     * one account can never be served another account's geocoding results.
+     *
+     * @return Builder<GeocodeCache>
+     */
+    private function cacheFor(Request $request): Builder
+    {
+        return GeocodeCache::query()->whereBelongsTo($request->user());
     }
 
     /**
