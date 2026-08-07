@@ -72,9 +72,3 @@ php artisan test --compact tests/Unit/NormalizeAddressTest.php
 
 The normalizer is the only unit with real edge cases, so it is the only thing
 tested.
-
-## Deliberately not built
-
-No auth, no user accounts, no Horizon, no map rendering, no progress polling.
-Each would triple the surface area and demonstrate nothing the cache does not
-already demonstrate.
