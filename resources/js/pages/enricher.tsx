@@ -33,7 +33,7 @@ export default function Enricher({
 
     return (
         <>
-            <Head title="Geocodio enricher" />
+            <Head title="Upload, Enrich, Download" />
 
             <div className="mx-auto w-full max-w-2xl space-y-8 p-8">
                 <header className="space-y-1">
